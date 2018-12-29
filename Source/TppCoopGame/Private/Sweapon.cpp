@@ -2,6 +2,7 @@
 
 #include "Sweapon.h"
 #include "DrawDebugHelpers.h"
+#include "Kismet/GameplayStatics.h"
 // Sets default values
 ASweapon::ASweapon()
 {
@@ -29,19 +30,26 @@ void ASweapon::Fire()
 		FRotator EyeRotation;
 		MyOwner->GetActorEyesViewPoint(EyeLocation, EyeRotation);
 
-		FVector TraceEnd = EyeLocation + (EyeRotation.Vector()*1000.0f);
+		//射击方位
+		FVector ShotDirection = EyeRotation.Vector();
 
+		//射线终点位置
+		FVector TraceEnd = EyeLocation + (ShotDirection * 1000.0f);
+
+		//射线碰撞设置。
 		FCollisionQueryParams  QueryParams;
 		QueryParams.AddIgnoredActor(MyOwner);
 		QueryParams.AddIgnoredActor(this);
-		QueryParams.bTraceComplex = true; /*Trur 为精准碰撞，false为简单碰撞*/
+		QueryParams.bTraceComplex = true; /*Thur 为精准碰撞，false为简单碰撞*/
 
 
 		FHitResult Hit;
 		if (GetWorld()->LineTraceSingleByChannel(Hit, EyeLocation, TraceEnd,ECC_Visibility, QueryParams))
 		{
 			//击中的时候造成伤害。
+			AActor *HitActor = Hit.GetActor();
 
+			UGameplayStatics::ApplyPointDamage(HitActor, 20.0f, ShotDirection, Hit, MyOwner->GetInstigatorController(), this, DamageType);
 		}
 		DrawDebugLine(GetWorld(), EyeLocation, TraceEnd, FColor::White, false, 1.0f, 0, 1.0f);
 	}
