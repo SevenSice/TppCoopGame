@@ -8,7 +8,7 @@
 
 class UDamageType;
 class USkeletalMeshComponent;
-
+class UParticleSystem;
 UCLASS()
 class TPPCOOPGAME_API ASweapon : public AActor
 {
@@ -28,6 +28,15 @@ protected:
 		void Fire();
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 		TSubclassOf<UDamageType> DamageType;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+		FName MuzzleSocketName;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+		UParticleSystem *MuzzuleEffect;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
+		UParticleSystem *ImpactEffect;
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
