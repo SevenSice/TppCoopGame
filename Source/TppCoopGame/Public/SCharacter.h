@@ -6,7 +6,7 @@
 #include "GameFramework/Character.h"
 #include "SCharacter.generated.h"
 
-
+class ASweapon;
 class UCameraComponent;
 class USpringArmComponent;
 
@@ -39,7 +39,33 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 		UCameraComponent *CameraComp = nullptr;
 
+	bool bWantsToZoom = false;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Player")
+		float ZoomedFOV;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Player", meta = (ClampMin = 0.1, ClampMax = 100))
+		float ZoomInterpSpeed;
+
+	//游戏开始时，默认的视角范围
+	float DefaultFOV;
+
+	ASweapon *CurrentWeapon = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Player")
+		TSubclassOf<ASweapon> StarterWeaponClass;
+
+	UPROPERTY(VisibleDefaultsOnly, Category = "Player")
+		FName WeaponAttachSocketName = "";
+
+protected:
+
+	void StartFire();
+	//void EndFire();
+
+	void BeginZoom();
+
+	void EndZoom();
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

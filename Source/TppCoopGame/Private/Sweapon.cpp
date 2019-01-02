@@ -6,12 +6,19 @@
 #include "Particles/ParticleSystem.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Particles/ParticleSystemComponent.h"
+
+
+//定义一个控制台变量。
+static int32 DebugWeaponDrawing = 0;
+FAutoConsoleVariableRef CVarDebugWeaponDrawing(
+	TEXT("COOP.DebugWeapons"),
+	DebugWeaponDrawing,
+	TEXT("Draw Debug Lines for Weapons"),
+	ECVF_Cheat);
+
 // Sets default values
 ASweapon::ASweapon()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
-
 	MeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("MeshComp"));
 	RootComponent = MeshComp;
 
@@ -21,12 +28,6 @@ ASweapon::ASweapon()
 	TraceTargetName = "Target";
 }
 
-// Called when the game starts or when spawned
-void ASweapon::BeginPlay()
-{
-	Super::BeginPlay();
-
-}
 
 void ASweapon::Fire()
 {
@@ -50,8 +51,7 @@ void ASweapon::Fire()
 		QueryParams.AddIgnoredActor(this);
 		QueryParams.bTraceComplex = true; /*Thur 为精准碰撞，false为简单碰撞*/
 
-		//叫“Target”粒子的参数。
-		FVector TraceEndPoint = TraceEnd;
+
 
 		FHitResult Hit;
 		if (GetWorld()->LineTraceSingleByChannel(Hit, EyeLocation, TraceEnd, ECC_Visibility, QueryParams))
@@ -65,34 +65,35 @@ void ASweapon::Fire()
 			{
 				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactEffect, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
 			}
-			//当射击受阻时击中点覆盖掉射线终点。
-			TraceEndPoint = Hit.ImpactPoint;
 		}
-		DrawDebugLine(GetWorld(), EyeLocation, TraceEnd, FColor::White, false, 1.0f, 0, 1.0f);
-
-		//射击特效
-		if (MuzzuleEffect != nullptr)
+		if (DebugWeaponDrawing > 0)
 		{
-			UGameplayStatics::SpawnEmitterAttached(MuzzuleEffect, MeshComp, MuzzleSocketName);
+				DrawDebugLine(GetWorld(), EyeLocation, TraceEnd, FColor::White, false, 1.0f, 0, 1.0f);
 		}
-		if (TraceEffect!=nullptr)
-		{
-			FVector MuzzleLocation = MeshComp->GetSocketLocation(MuzzleSocketName);
-
-			UParticleSystemComponent *TraceComp= UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TraceEffect, MuzzleLocation);
-
-			if (TraceComp)
-			{
-				TraceComp->SetVectorParameter(TraceTargetName, TraceEndPoint);
-			}
-		}
+		PlayFireEffects(TraceEnd);
 	}
 }
 
-// Called every frame
-void ASweapon::Tick(float DeltaTime)
+void ASweapon::PlayFireEffects(FVector TraceEnd)
 {
-	Super::Tick(DeltaTime);
+	//叫“Target”粒子的参数。
+	FVector TraceEndPoint = TraceEnd;
+	////当射击受阻时击中点覆盖掉射线终点。
+	//TraceEndPoint = Hit.ImpactPoint;
+	//射击特效
+	if (MuzzuleEffect != nullptr)
+	{
+		UGameplayStatics::SpawnEmitterAttached(MuzzuleEffect, MeshComp, MuzzleSocketName);
+	}
+	if (TraceEffect != nullptr)
+	{
+		FVector MuzzleLocation = MeshComp->GetSocketLocation(MuzzleSocketName);
 
+		UParticleSystemComponent *TraceComp = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TraceEffect, MuzzleLocation);
+
+		if (TraceComp)
+		{
+			TraceComp->SetVectorParameter(TraceTargetName, TraceEndPoint);
+		}
+	}
 }
-

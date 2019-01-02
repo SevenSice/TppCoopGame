@@ -9,6 +9,9 @@
 class UDamageType;
 class USkeletalMeshComponent;
 class UParticleSystem;
+
+
+
 UCLASS()
 class TPPCOOPGAME_API ASweapon : public AActor
 {
@@ -21,11 +24,6 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 		USkeletalMeshComponent *MeshComp = nullptr;
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
-	UFUNCTION(BlueprintCallable, Category = "Weapon")
-		virtual void Fire();
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 		TSubclassOf<UDamageType> DamageType;
@@ -44,8 +42,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 		UParticleSystem *TraceEffect;
-public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
+	void PlayFireEffects(FVector TraceEnd);
+
+public:
+	UFUNCTION(BlueprintCallable,  Category = "Weapon")
+		virtual void Fire();
 };
