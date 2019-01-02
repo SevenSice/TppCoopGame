@@ -4,7 +4,8 @@
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
-
+#include "Components/SkeletalMeshComponent.h"
+#include "Particles/ParticleSystemComponent.h"
 // Sets default values
 ASweapon::ASweapon()
 {
@@ -14,7 +15,10 @@ ASweapon::ASweapon()
 	MeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("MeshComp"));
 	RootComponent = MeshComp;
 
+	//骨骼模型下的的插槽名"MuzzleSocket"，不然无法识别。
 	MuzzleSocketName = "MuzzleSocket";
+	//粒子特效下的名字叫Target属性下叫parameter name的为"Target"
+	TraceTargetName = "Target";
 }
 
 // Called when the game starts or when spawned
@@ -46,9 +50,11 @@ void ASweapon::Fire()
 		QueryParams.AddIgnoredActor(this);
 		QueryParams.bTraceComplex = true; /*Thur 为精准碰撞，false为简单碰撞*/
 
+		//叫“Target”粒子的参数。
+		FVector TraceEndPoint = TraceEnd;
 
 		FHitResult Hit;
-		if (GetWorld()->LineTraceSingleByChannel(Hit, EyeLocation, TraceEnd,ECC_Visibility, QueryParams))
+		if (GetWorld()->LineTraceSingleByChannel(Hit, EyeLocation, TraceEnd, ECC_Visibility, QueryParams))
 		{
 			//击中的时候造成伤害。
 			AActor *HitActor = Hit.GetActor();
@@ -59,15 +65,27 @@ void ASweapon::Fire()
 			{
 				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactEffect, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
 			}
+			//当射击受阻时击中点覆盖掉射线终点。
+			TraceEndPoint = Hit.ImpactPoint;
 		}
 		DrawDebugLine(GetWorld(), EyeLocation, TraceEnd, FColor::White, false, 1.0f, 0, 1.0f);
 
 		//射击特效
-		if (MuzzuleEffect!=nullptr)
+		if (MuzzuleEffect != nullptr)
 		{
 			UGameplayStatics::SpawnEmitterAttached(MuzzuleEffect, MeshComp, MuzzleSocketName);
 		}
-		
+		if (TraceEffect!=nullptr)
+		{
+			FVector MuzzleLocation = MeshComp->GetSocketLocation(MuzzleSocketName);
+
+			UParticleSystemComponent *TraceComp= UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TraceEffect, MuzzleLocation);
+
+			if (TraceComp)
+			{
+				TraceComp->SetVectorParameter(TraceTargetName, TraceEndPoint);
+			}
+		}
 	}
 }
 
