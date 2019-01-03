@@ -58,10 +58,12 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, Category = "Player")
 		FName WeaponAttachSocketName = "";
 
+
 protected:
 
 	void StartFire();
-	//void EndFire();
+	
+	void StopFire();
 
 	void BeginZoom();
 

@@ -71,7 +71,15 @@ void ASCharacter::StartFire()
 {
 	if (CurrentWeapon != nullptr)
 	{
-		CurrentWeapon->Fire();
+		CurrentWeapon->StartFire();
+	}
+}
+
+void ASCharacter::StopFire()
+{
+	if (CurrentWeapon != nullptr)
+	{
+		CurrentWeapon->StopFire();
 	}
 }
 
@@ -117,7 +125,7 @@ void ASCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	PlayerInputComponent->BindAction("Zoom", IE_Released, this, &ASCharacter::EndZoom);
 
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ASCharacter::StartFire);
-	//PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &ASCharacter::EndFire);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &ASCharacter::StopFire);
 }
 
 FVector ASCharacter::GetPawnViewLocation() const
