@@ -9,7 +9,7 @@
 class ASweapon;
 class UCameraComponent;
 class USpringArmComponent;
-
+class USHealthComponent;
 UCLASS()
 class TPPCOOPGAME_API ASCharacter : public ACharacter
 {
@@ -39,6 +39,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 		UCameraComponent *CameraComp = nullptr;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
+	USHealthComponent* HealthComp = nullptr;
+
 	bool bWantsToZoom = false;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Player")
@@ -58,16 +61,24 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, Category = "Player")
 		FName WeaponAttachSocketName = "";
 
+	//ÕÊº“ «∑ÒÀ¿Õˆ
+	UPROPERTY(BlueprintReadOnly, Category = "Player")
+		bool bDied;
 
 protected:
 
 	void StartFire();
-	
+
 	void StopFire();
 
 	void BeginZoom();
 
 	void EndZoom();
+
+	UFUNCTION()
+		void OnHealthChanged(USHealthComponent* OwningHealthComp, float Health, float HealthDelta, const class UDamageType* DamageType,
+			class AController* InstigatedBy, AActor* DamageCauser);
+
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

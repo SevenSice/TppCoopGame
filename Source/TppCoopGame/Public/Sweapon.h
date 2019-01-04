@@ -22,7 +22,7 @@ public:
 	ASweapon();
 
 protected:
-	void BeginPlay()override;
+	virtual void BeginPlay()override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 		USkeletalMeshComponent *MeshComp = nullptr;

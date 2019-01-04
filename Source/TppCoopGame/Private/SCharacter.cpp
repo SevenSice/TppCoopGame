@@ -4,6 +4,9 @@
 #include "Engine/Classes/GameFramework/SpringArmComponent.h"
 #include "Engine/Classes/Camera/CameraComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "TppCoopGame/TppCoopGame.h"
+#include "SHealthComponent.h"
 #include "Sweapon.h"
 
 // Sets default values
@@ -19,7 +22,12 @@ ASCharacter::ASCharacter()
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
 	CameraComp->SetupAttachment(SpringArmComp);
 
+	HealthComp = CreateDefaultSubobject<USHealthComponent>(TEXT("HealthComp"));
+	HealthComp->OnHealthChanged.AddDynamic(this, &ASCharacter::OnHealthChanged);
+
 	GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;
+
+	GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_WEAPON, ECR_Ignore);
 
 	WeaponAttachSocketName = "WeaponSocket";
 
@@ -31,7 +39,6 @@ ASCharacter::ASCharacter()
 void ASCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
 
 	//写在beginPlay里面，是防止有人在蓝图里面修改默认值，我们仍然能获得有效值。
 	DefaultFOV = CameraComp->FieldOfView;
@@ -92,6 +99,26 @@ void ASCharacter::EndZoom()
 {
 	bWantsToZoom = false;
 }
+
+void ASCharacter::OnHealthChanged(USHealthComponent * OwningHealthComp, float Health, float HealthDelta,
+	const UDamageType * DamageType, AController * InstigatedBy, AActor * DamageCauser)
+{
+	if (Health <= 0 && bDied == false)
+	{
+		//Die !
+		bDied = true;
+
+		GetMovementComponent()->StopMovementImmediately();
+
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		DetachFromControllerPendingDestroy();
+
+		//设置生命周期10秒。
+		SetLifeSpan(10.0f);
+	}
+}
+
 
 // Called every frame
 void ASCharacter::Tick(float DeltaTime)
