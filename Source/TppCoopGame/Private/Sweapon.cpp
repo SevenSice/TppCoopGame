@@ -34,6 +34,8 @@ ASweapon::ASweapon()
 
 	//每分钟发射子弹数量
 	RateOfFire = 600.0f;
+
+	SetReplicates(true);
 }
 void ASweapon::BeginPlay()
 {

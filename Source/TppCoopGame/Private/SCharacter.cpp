@@ -8,6 +8,7 @@
 #include "TppCoopGame/TppCoopGame.h"
 #include "SHealthComponent.h"
 #include "Sweapon.h"
+#include "Net/UnrealNetWork.h"
 
 // Sets default values
 ASCharacter::ASCharacter()
@@ -43,15 +44,19 @@ void ASCharacter::BeginPlay()
 	//写在beginPlay里面，是防止有人在蓝图里面修改默认值，我们仍然能获得有效值。
 	DefaultFOV = CameraComp->FieldOfView;
 
-	FActorSpawnParameters SpawnParameters;
-	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	//生成默认武器
-	CurrentWeapon = GetWorld()->SpawnActor<ASweapon>(StarterWeaponClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParameters);
-	if (CurrentWeapon != nullptr)
+	if (Role==ROLE_Authority)
 	{
-		CurrentWeapon->SetOwner(this);
-		CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponAttachSocketName);
+		FActorSpawnParameters SpawnParameters;
+		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		//生成默认武器
+		CurrentWeapon = GetWorld()->SpawnActor<ASweapon>(StarterWeaponClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParameters);
+		if (CurrentWeapon != nullptr)
+		{
+			CurrentWeapon->SetOwner(this);
+			CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, WeaponAttachSocketName);
+		}
 	}
+
 }
 
 void ASCharacter::MoveForward(float Value)
@@ -165,3 +170,10 @@ FVector ASCharacter::GetPawnViewLocation() const
 	return Super::GetPawnViewLocation();
 }
 
+void ASCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ASCharacter, CurrentWeapon);
+	//DOREPLIFETIME(ASCharacter, bDied);
+}

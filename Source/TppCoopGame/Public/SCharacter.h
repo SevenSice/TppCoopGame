@@ -53,6 +53,7 @@ protected:
 	//游戏开始时，默认的视角范围
 	float DefaultFOV;
 
+	UPROPERTY(Replicated)
 	ASweapon *CurrentWeapon = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Player")
@@ -87,4 +88,5 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual FVector GetPawnViewLocation() const override;
+	
 };
