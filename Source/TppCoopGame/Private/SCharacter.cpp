@@ -9,6 +9,7 @@
 #include "SHealthComponent.h"
 #include "Sweapon.h"
 #include "Net/UnrealNetWork.h"
+#include "Camera/CameraShake.h"
 
 // Sets default values
 ASCharacter::ASCharacter()

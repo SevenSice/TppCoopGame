@@ -9,8 +9,21 @@
 class UDamageType;
 class USkeletalMeshComponent;
 class UParticleSystem;
+class UCameraShake;
 
+//包含扫描射击武器的轨迹信息。
+USTRUCT()
+struct FHitScanTrace
+{
+	GENERATED_BODY()
+public:
+	//不能直接传枚举，需TEnumAsByte转换为二进制
+	UPROPERTY()
+		TEnumAsByte<EPhysicalSurface> SurfaceType;
 
+	UPROPERTY()
+		FVector_NetQuantize TraceTo;
+};
 
 UCLASS()
 class TPPCOOPGAME_API ASweapon : public AActor
@@ -48,7 +61,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 		UParticleSystem *TraceEffect;
 
-	void PlayFireEffects(FVector TraceEnd);
+
 
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 		TSubclassOf<UCameraShake> FireCameraShake;
@@ -66,9 +79,24 @@ protected:
 
 	//射击速率
 	float TimeBetweenShots = 0;
+
+	UPROPERTY(ReplicatedUsing = OnRep_HitScanTrace)
+		FHitScanTrace HitScanTrace;
+
+protected:
+	void PlayFireEffects(FVector TraceEnd);
+
+	void PlayImpactEffects(EPhysicalSurface SurfaceType, FVector ImpactPoint);
+
+	UFUNCTION()
+		void OnRep_HitScanTrace();
 public:
+
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 		virtual void Fire();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		void ServerFire();
 
 	void StartFire();
 
