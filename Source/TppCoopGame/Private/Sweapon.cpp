@@ -38,6 +38,10 @@ ASweapon::ASweapon()
 	RateOfFire = 600.0f;
 
 	SetReplicates(true);
+
+	//默认刷新率为100，最小刷新率为2.可能导致不太同步的情况。
+	NetUpdateFrequency = 66.0f;
+	MinNetUpdateFrequency = 33.0f;
 }
 void ASweapon::BeginPlay()
 {

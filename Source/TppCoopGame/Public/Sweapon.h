@@ -62,7 +62,6 @@ protected:
 		UParticleSystem *TraceEffect;
 
 
-
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 		TSubclassOf<UCameraShake> FireCameraShake;
 
@@ -70,9 +69,9 @@ protected:
 		float BaseDamage = 0;
 
 	FTimerHandle TimerHandle_TimeBetShots;
-
+	
 	float LastFireTime = 0;
-
+	
 	//每分钟发射子弹数量
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
 		float RateOfFire = 0;

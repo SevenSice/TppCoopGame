@@ -1,12 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SHealthComponent.h"
-
+#include "Net/UnrealNetWork.h"
 // Sets default values for this component's properties
 USHealthComponent::USHealthComponent()
 {
 	Health = 100.0f;
 	DefaultHealth = 100.0f;
+
+	SetIsReplicated(true);
 }
 
 
@@ -14,11 +16,16 @@ USHealthComponent::USHealthComponent()
 void USHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	AActor *MyOwner = GetOwner();
-	if (MyOwner!=nullptr)
+
+	//仅当我们是服务器时，将生命值与伤害挂钩。
+	//因为是component所以没有Role属性。要GetOwnerRole()。
+	if (GetOwnerRole()==ROLE_Authority)
 	{
-		MyOwner->OnTakeAnyDamage.AddDynamic(this, &USHealthComponent::HandleTakeAnyDamage);
+		AActor *MyOwner = GetOwner();
+		if (MyOwner != nullptr)
+		{
+			MyOwner->OnTakeAnyDamage.AddDynamic(this, &USHealthComponent::HandleTakeAnyDamage);
+		}
 	}
 
 	DefaultHealth = Health;
@@ -37,6 +44,13 @@ void USHealthComponent::HandleTakeAnyDamage(AActor * DamagedActor, float Damage,
 	OnHealthChanged.Broadcast(this, Health, Damage, DamageType, InstigatedBy, DamageCauser);
 }
 
+void USHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(USHealthComponent, Health);
+
+}
 
 //// Called every frame
 //void USHealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

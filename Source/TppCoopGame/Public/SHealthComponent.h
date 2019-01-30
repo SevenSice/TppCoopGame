@@ -11,7 +11,6 @@ class AController;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_SixParams(FOnHealthChangedSignature, USHealthComponent*, OwningHealthComp, float, Health, float, HealthDelta, const class UDamageType*, DamageType, class AController*, InstigatedBy, AActor*, DamageCauser);
 
 
-
 UCLASS(ClassGroup = (COOP), meta = (BlueprintSpawnableComponent))
 class TPPCOOPGAME_API USHealthComponent : public UActorComponent
 {
@@ -22,7 +21,7 @@ public:
 	USHealthComponent();
 
 protected:
-	UPROPERTY(BlueprintReadOnly, Category = "HealthComponent")
+	UPROPERTY(Replicated,BlueprintReadOnly, Category = "HealthComponent")
 		float Health;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "HealthComponent")
 		float DefaultHealth;

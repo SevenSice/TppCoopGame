@@ -29,9 +29,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 		USHealthComponent *HealthComp;
 
-	//是否已经爆炸
-	bool bExploded;
-
 	/*当它爆炸时施加在桶网上的冲量，使它上升一点*/
 	UPROPERTY(EditDefaultsOnly, Category = "FX")
 		float ExplosionImpulse;
@@ -44,16 +41,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "FX")
 		UMaterialInterface *ExplodedMaterial;
 
+	//是否已经爆炸
+	//ReplicatedUsing调用时进行复制，然后添加新函数OnRep_Exploded(),所以当bool值发生改变时，客户端会有反馈。
+	UPROPERTY(ReplicatedUsing=OnRep_Exploded)
+	bool bExploded;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UFUNCTION()
+		void OnRep_Exploded();
 
 	UFUNCTION()
 		void OnHealthChanged(USHealthComponent* OwningHealthComp, float Health, float HealthDelta, const class UDamageType* DamageType,
 			class AController* InstigatedBy, AActor* DamageCauser);
 
 public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 };

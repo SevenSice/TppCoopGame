@@ -39,7 +39,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 		UCameraComponent *CameraComp = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USHealthComponent* HealthComp = nullptr;
 
 	bool bWantsToZoom = false;
@@ -63,7 +63,7 @@ protected:
 		FName WeaponAttachSocketName = "";
 
 	//ÕÊº“ «∑ÒÀ¿Õˆ
-	UPROPERTY(BlueprintReadOnly, Category = "Player")
+	UPROPERTY(Replicated ,BlueprintReadOnly, Category = "Player")
 		bool bDied;
 
 protected:

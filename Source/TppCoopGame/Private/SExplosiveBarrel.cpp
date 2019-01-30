@@ -5,6 +5,8 @@
 #include "SHealthComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
+
 // Sets default values
 ASExplosiveBarrel::ASExplosiveBarrel()
 {
@@ -25,6 +27,10 @@ ASExplosiveBarrel::ASExplosiveBarrel()
 	HealthComp->OnHealthChanged.AddDynamic(this, &ASExplosiveBarrel::OnHealthChanged);
 
 	ExplosionImpulse = 400;
+
+	//设置属性和位置同步复制.
+	SetReplicates(true);
+	SetReplicateMovement(true);
 }
 
 // Called when the game starts or when spawned
@@ -33,6 +39,7 @@ void ASExplosiveBarrel::BeginPlay()
 	Super::BeginPlay();
 	
 }
+
 
 void ASExplosiveBarrel::OnHealthChanged(USHealthComponent * OwningHealthComp, float Health, float HealthDelta,
 	const UDamageType * DamageType, AController * InstigatedBy, AActor * DamageCauser)
@@ -44,16 +51,11 @@ void ASExplosiveBarrel::OnHealthChanged(USHealthComponent * OwningHealthComp, fl
 	if (Health <= 0.0f)
 	{
 		bExploded = true;
-		
+		OnRep_Exploded();
+
 		//把物体往上推
 		FVector BoostIntensity = FVector::UpVector*ExplosionImpulse;
 		MeshComp->AddImpulse(BoostIntensity, NAME_None, true);
-
-		//产生粒子特效
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionEffect, GetActorLocation());
-
-		//改变材质
-		MeshComp->SetMaterial(0, ExplodedMaterial);
 
 		//产生爆炸脉冲
 		RadialForceComp->FireImpulse();
@@ -61,10 +63,20 @@ void ASExplosiveBarrel::OnHealthChanged(USHealthComponent * OwningHealthComp, fl
 
 }
 
-// Called every frame
-void ASExplosiveBarrel::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 
+void ASExplosiveBarrel::OnRep_Exploded()
+{
+	//产生粒子特效
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionEffect, GetActorLocation());
+
+	//改变材质
+	MeshComp->SetMaterial(0, ExplodedMaterial);
 }
 
+
+void ASExplosiveBarrel::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ASExplosiveBarrel, bExploded);
+}
