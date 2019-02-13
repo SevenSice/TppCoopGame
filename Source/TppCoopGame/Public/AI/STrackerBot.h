@@ -67,6 +67,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
 	USoundCue* ExplodeSound;
+
+	// the power boost of the bot, affects damaged caused to enemies and color of the bot (range: 1 to 4)
+	int32 PowerLevel;
 protected:
 
 	// Called when the game starts or when spawned
@@ -87,4 +90,6 @@ public:
 	UFUNCTION()
 	void HandleTakeDamage(USHealthComponent* OwningHealthComp, float Health, float HealthDelta, const class UDamageType* DamageType,
 		class AController* InstigatedBy, AActor* DamageCauser);
+
+	void OnCheckNearbyBots();
 };

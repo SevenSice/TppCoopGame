@@ -60,6 +60,10 @@ void ASTrackerBot::BeginPlay()
 	{
 		//找到移动起点位置
 		NextPathPoint = GetNextPathPoint();
+
+		// 每一秒我们都会根据附近的机器人更新我们的能量级别(CHALLENGE CODE)
+		FTimerHandle TimerHandle_CheckPowerLevel;
+		GetWorldTimerManager().SetTimer(TimerHandle_CheckPowerLevel, this, &ASTrackerBot::OnCheckNearbyBots, 1.0f, true);
 	}
 
 }
@@ -107,6 +111,8 @@ void ASTrackerBot::HandleTakeDamage(USHealthComponent * OwningHealthComp, float 
 }
 
 
+
+
 void ASTrackerBot::SelfDestruct()
 {
 	if (bExploded)
@@ -128,8 +134,13 @@ void ASTrackerBot::SelfDestruct()
 		//造成范围伤害
 		TArray<AActor*> IgnoredActors;
 		IgnoredActors.Add(this);
-		UGameplayStatics::ApplyRadialDamage(this, ExplosionDamage, GetActorLocation(), ExplosionRadius, nullptr, IgnoredActors, this, GetInstigatorController(), true);
-		
+
+		// Increase damage based on the power level (challenge code)
+		float ActualDamage = ExplosionDamage + (ExplosionDamage * PowerLevel);
+
+		// Apply Damage!
+		UGameplayStatics::ApplyRadialDamage(this, ActualDamage, GetActorLocation(), ExplosionRadius, nullptr, IgnoredActors, this, GetInstigatorController(), true);
+
 		//销毁
 		SetLifeSpan(2.0f);
 	}
@@ -182,5 +193,66 @@ void ASTrackerBot::NotifyActorBeginOverlap(AActor * OtherActor)
 			UGameplayStatics::SpawnSoundAttached(SelfDestructSound, RootComponent);
 		}
 	}
+
+}
+void ASTrackerBot::OnCheckNearbyBots()
+{
+	//检查附近机器人是否在这个范围
+	const float Radius = 600;
+
+	//为重叠部分创建临时碰撞形状
+	FCollisionShape CollShape;
+	CollShape.SetSphere(Radius);
+
+	// Only find Pawns (eg. players and AI bots)
+	FCollisionObjectQueryParams QueryParams;
+	// Our tracker bot's mesh component is set to Physics Body in Blueprint (default profile of physics simulated actors)
+	QueryParams.AddObjectTypesToQuery(ECC_PhysicsBody);
+	QueryParams.AddObjectTypesToQuery(ECC_Pawn);
+
+	TArray<FOverlapResult> Overlaps;
+	GetWorld()->OverlapMultiByObjectType(Overlaps, GetActorLocation(), FQuat::Identity, QueryParams, CollShape);
+
+	int32 NrOfBots = 0;
+	// loop over the results using a "range based for loop"
+	for (FOverlapResult Result : Overlaps)
+	{
+		// Check if we overlapped with another tracker bot (ignoring players and other bot types)
+		ASTrackerBot* Bot = Cast<ASTrackerBot>(Result.GetActor());
+		// Ignore this trackerbot instance
+		if (Bot && Bot != this)
+		{
+			NrOfBots++;
+		}
+	}
+
+	const int32 MaxPowerLevel = 4;
+
+	// Clamp between min=0 and max=4
+	PowerLevel = FMath::Clamp(NrOfBots, 0, MaxPowerLevel);
+
+	//更新材质
+	if (MatInst == nullptr)
+	{
+		//创建一个动态材质实例
+		MatInst = MeshComp->CreateAndSetMaterialInstanceDynamicFromMaterial(0, MeshComp->GetMaterial(0));
+	}
+	if (MatInst)
+	{
+		// Convert to a float between 0 and 1 just like an 'Alpha' value of a texture. Now the material can be set up without having to know the max power level 
+		// which can be tweaked many times by gameplay decisions (would mean we need to keep 2 places up to date)
+		
+		float Alpha = PowerLevel / (float)MaxPowerLevel;
+
+		// Note: (float)MaxPowerLevel converts the int32 to a float, 
+		//	otherwise the following happens when dealing when dividing integers: 1 / 4 = 0 ('PowerLevel' int / 'MaxPowerLevel' int = 0 int)
+		//	this is a common programming problem and can be fixed by 'casting' the int (MaxPowerLevel) to a float before dividing.
+
+		MatInst->SetScalarParameterValue("PowerLevelAlpha", Alpha);
+	}
+
+
+
+
 
 }
