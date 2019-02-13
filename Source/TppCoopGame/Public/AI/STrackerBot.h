@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "STrackerBot.generated.h"
-
+class USoundCue;
 class UStaticMeshComponent;
 class USHealthComponent;
 class UMaterialInstanceDynamic;
@@ -46,11 +46,27 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
 	UParticleSystem* ExplosionEffect;
 
+	bool bExploded;
+
 	UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
 	float ExplosionRadius;
 
 	UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
 	float ExplosionDamage;
+
+	UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
+	float SelfDamageInterval;
+
+	FTimerHandle TimerHandle_SelfDamage;
+
+
+	bool bStartedSelfDestruction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
+	USoundCue* SelfDestructSound;
+
+	UPROPERTY(EditDefaultsOnly, Category = "TrackerBot")
+	USoundCue* ExplodeSound;
 protected:
 
 	// Called when the game starts or when spawned
@@ -58,10 +74,13 @@ protected:
 
 	void SelfDestruct();
 
+	void DamageSelf();
 public:	
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 
 	FVector GetNextPathPoint();
 

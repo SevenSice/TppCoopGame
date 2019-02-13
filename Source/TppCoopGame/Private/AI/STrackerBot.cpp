@@ -9,10 +9,12 @@
 #include "SHealthComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Components/SphereComponent.h"
+#include "SCharacter.h"
+#include "Sound/SoundCue.h"
 // Sets default values
 ASTrackerBot::ASTrackerBot()
 {
- 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComponent"));
@@ -25,23 +27,40 @@ ASTrackerBot::ASTrackerBot()
 
 	SphereComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
 	SphereComp->SetSphereRadius(200.0f);
-	SphereComp->SetupAttachment(MeshComp);
+	SphereComp->SetupAttachment(RootComponent);
+	SphereComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	SphereComp->SetCollisionResponseToAllChannels(ECR_Ignore);
+	SphereComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
 	bUseVelocityChange = false;
 	MovementForce = 1000.0f;
 	RequireDistanceToTarget = 100.0f;
 
+	bExploded = false;
+
 	ExplosionDamage = 40.0f;
 	ExplosionRadius = 200.0f;
+
+	SelfDamageInterval = 0.25f;
+
+	bStartedSelfDestruction = false;
+}
+
+void ASTrackerBot::DamageSelf()
+{
+	UGameplayStatics::ApplyDamage(this, 20, GetInstigatorController(), this, nullptr);
 }
 
 // Called when the game starts or when spawned
 void ASTrackerBot::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	//找到移动起点位置
-	NextPathPoint = GetNextPathPoint();
+
+	if (Role==ROLE_Authority)
+	{
+		//找到移动起点位置
+		NextPathPoint = GetNextPathPoint();
+	}
 
 }
 
@@ -52,12 +71,12 @@ FVector ASTrackerBot::GetNextPathPoint()
 	//尝试获取玩家位置
 	ACharacter* PlayerPawn = UGameplayStatics::GetPlayerCharacter(this, 0);
 	UNavigationPath* NavPath = UNavigationSystemV1::FindPathToActorSynchronously(this, GetActorLocation(), PlayerPawn);
-	if (NavPath==nullptr)
+	if (NavPath == nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("NavPath is Null !!"));
 		return PlayerPawn->GetActorLocation();
 	}
-	if (NavPath->PathPoints.Num()>1)
+	if (NavPath->PathPoints.Num() > 1)
 	{
 		//返回下个点的路径
 		return NavPath->PathPoints[1];
@@ -71,11 +90,11 @@ void ASTrackerBot::HandleTakeDamage(USHealthComponent * OwningHealthComp, float 
 	//生命值为0时爆炸
 
 	//击中后材质脉冲式闪烁
-	if (MatInst==nullptr)
+	if (MatInst == nullptr)
 	{
 		MatInst = MeshComp->CreateAndSetMaterialInstanceDynamicFromMaterial(0, MeshComp->GetMaterial(0));
 	}
-	if (MatInst!=nullptr)
+	if (MatInst != nullptr)
 	{
 		MatInst->SetScalarParameterValue("LastTimeDamageTaken", GetWorld()->TimeSeconds);
 	}
@@ -84,20 +103,37 @@ void ASTrackerBot::HandleTakeDamage(USHealthComponent * OwningHealthComp, float 
 	{
 		SelfDestruct();
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Health ： %s"),*FString::SanitizeFloat(Health));
+	UE_LOG(LogTemp, Warning, TEXT("Health ： %s"), *FString::SanitizeFloat(Health));
 }
 
 
 void ASTrackerBot::SelfDestruct()
 {
+	if (bExploded)
+	{
+		return;
+	}
+	bExploded = true;
+
 	//产生爆炸特效
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionEffect, GetActorLocation());
-	//造成范围伤害
-	TArray<AActor*> IgnoredActors;
-	IgnoredActors.Add(this);
-	UGameplayStatics::ApplyRadialDamage(this, ExplosionDamage, GetActorLocation(), ExplosionRadius,nullptr, IgnoredActors,this,GetInstigatorController(),true);
-	//销毁
-	Destroy();
+	
+	UGameplayStatics::PlaySoundAtLocation(this, ExplodeSound, GetActorLocation());
+
+	MeshComp->SetVisibility(false, true);
+	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	if (Role == ROLE_Authority)
+	{
+		//造成范围伤害
+		TArray<AActor*> IgnoredActors;
+		IgnoredActors.Add(this);
+		UGameplayStatics::ApplyRadialDamage(this, ExplosionDamage, GetActorLocation(), ExplosionRadius, nullptr, IgnoredActors, this, GetInstigatorController(), true);
+		
+		//销毁
+		SetLifeSpan(2.0f);
+	}
+	
 }
 
 
@@ -105,21 +141,46 @@ void ASTrackerBot::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	//角色与下一个点的距离
-	float DistanceToTarget = (GetActorLocation() - NextPathPoint).Size();
-
-	if (DistanceToTarget <= RequireDistanceToTarget)
+	if (Role == ROLE_Authority && !bExploded)
 	{
-		//重新设置起点
-		NextPathPoint = GetNextPathPoint();
-	}
-	else
-	{
-		//不断移向下一个目标
-		FVector ForceDirection = NextPathPoint - GetActorLocation();
-		ForceDirection.Normalize();
-		ForceDirection *= MovementForce;
+		//角色与下一个点的距离
+		float DistanceToTarget = (GetActorLocation() - NextPathPoint).Size();
 
-		MeshComp->AddForce(ForceDirection, NAME_None, bUseVelocityChange);
+		if (DistanceToTarget <= RequireDistanceToTarget)
+		{
+			//重新设置起点
+			NextPathPoint = GetNextPathPoint();
+		}
+		else
+		{
+			//不断移向下一个目标
+			FVector ForceDirection = NextPathPoint - GetActorLocation();
+			ForceDirection.Normalize();
+			ForceDirection *= MovementForce;
+
+			MeshComp->AddForce(ForceDirection, NAME_None, bUseVelocityChange);
+		}
 	}
+}
+
+void ASTrackerBot::NotifyActorBeginOverlap(AActor * OtherActor)
+{
+	Super::NotifyActorBeginOverlap(OtherActor);
+
+	if (bStartedSelfDestruction == false && bExploded == false)
+	{
+		ASCharacter* PlayerPawn = Cast<ASCharacter>(OtherActor);
+		if (PlayerPawn != nullptr)
+		{
+			//与玩家发生重叠
+
+			//开始自毁程序
+			GetWorldTimerManager().SetTimer(TimerHandle_SelfDamage, this, &ASTrackerBot::DamageSelf, SelfDamageInterval, true, 0.0f);
+
+			bStartedSelfDestruction = true;
+
+			UGameplayStatics::SpawnSoundAttached(SelfDestructSound, RootComponent);
+		}
+	}
+
 }
