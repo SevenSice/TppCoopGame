@@ -12,7 +12,10 @@ ASPowerupActor::ASPowerupActor()
 
 	TicksProcessed = 0;
 
+	bIsPowerupActive = false;
+
 	SetReplicates(true);
+
 }
 
 
@@ -25,8 +28,10 @@ void ASPowerupActor::OnTickPowerup()
 
 	if (TicksProcessed >= TotalNrOfTicks)
 	{
-
 		OnExpired();
+
+		bIsPowerupActive = false;
+		OnRep_PowerupActive();
 
 		//Çå³ý¶¨Ê±Æ÷
 		GetWorldTimerManager().ClearTimer(TimerHandle_PowerupTick);
@@ -40,10 +45,12 @@ void ASPowerupActor::OnRep_PowerupActive()
 	OnPowerupStateChange(bIsPowerupActive);
 }
 
-void ASPowerupActor::ActivatePowerup()
+void ASPowerupActor::ActivatePowerup(AActor* ActiveFor)
 {	
-	OnActivated();
+	OnActivated(ActiveFor);
 
+	bIsPowerupActive = true;
+	OnRep_PowerupActive();
 
 	if (PowerupInterval > 0.0f)
 	{
