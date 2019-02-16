@@ -75,12 +75,12 @@ FVector ASTrackerBot::GetNextPathPoint()
 	//尝试获取玩家位置
 	ACharacter* PlayerPawn = UGameplayStatics::GetPlayerCharacter(this, 0);
 	UNavigationPath* NavPath = UNavigationSystemV1::FindPathToActorSynchronously(this, GetActorLocation(), PlayerPawn);
-	if (NavPath == nullptr)
+	if (NavPath)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("NavPath is Null !!"));
 		return PlayerPawn->GetActorLocation();
 	}
-	if (NavPath->PathPoints.Num() > 1)
+	if (NavPath && NavPath->PathPoints.Num() > 1)
 	{
 		//返回下个点的路径
 		return NavPath->PathPoints[1];
