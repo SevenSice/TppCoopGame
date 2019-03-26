@@ -6,6 +6,9 @@
 #include "GameFramework/GameModeBase.h"
 #include "SGameMode.generated.h"
 
+enum class EWaveState :uint8;
+
+
 /**
  * 
  */
@@ -36,8 +39,6 @@ protected:
 
 	void SpawnBotTimerElapsed();
 
-
-
 	//开始产生机器人
 	void StartWave();
 
@@ -48,6 +49,13 @@ protected:
 	void PreparaForNextWave();
 
 	void CheckWaveState();
+
+	//检测是否还有玩家存活
+	void CheakAnyPlayerAlive();
+
+	void GameOver();
+
+	void SetWaveState(EWaveState NewState);
 public:
 	virtual void Tick(float DeltaSecond) override;
 
