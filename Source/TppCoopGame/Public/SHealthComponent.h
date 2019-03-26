@@ -21,6 +21,7 @@ public:
 	USHealthComponent();
 
 protected:
+	bool bIsDead;
 	UPROPERTY(ReplicatedUsing = OnRep_Health, BlueprintReadOnly, Category = "HealthComponent")
 		float Health;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "HealthComponent")

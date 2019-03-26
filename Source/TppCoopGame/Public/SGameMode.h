@@ -8,6 +8,7 @@
 
 enum class EWaveState :uint8;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnActorKillerd, AActor*, VictimActor, AActor*, KillerActor,AController*,KillerController);
 
 /**
  * 
@@ -60,4 +61,7 @@ public:
 	virtual void Tick(float DeltaSecond) override;
 
 	virtual void StartPlay() override;
+
+	UPROPERTY(BlueprintAssignable, Category = "GameMode")
+	FOnActorKillerd OnActorKillerd;
 };
